@@ -11,52 +11,20 @@ class PDFActionTagsExternalModule extends AbstractExternalModule {
 
     public $IDENTITY = "27af2aea-2563-4a5e-9c33-748c89d1cb15";
 
+    function redcap_every_page_before_render($project_id = null) {
+        if (PAGE==='PDF/index.pdf') {
+            $this->exitAfterHook();
+            $url = $this->getUrl('pdf.php');
+            redirect($url);
+        }
+    }
+    
     function redcap_every_page_top($project_id = null) {
 
         // Do not run on non-project pages.
         $project_id = empty($project_id) ? 0 : is_numeric($project_id) ? intval($project_id) : 0;
         if ($project_id < 1) return;
 
-        // Inject JS into project pages that redirects all PDF links to this module ...
-        $pdfUrlPrefix = dirname(APP_PATH_WEBROOT);
-        $pdfUrlPrefix = strlen($pdfUrlPrefix) > 1 ? $pdfUrlPrefix : "";
-        $pdfUrl = $pdfUrlPrefix . str_replace(APP_PATH_WEBROOT_FULL, "/", $this->getUrl("pdf.php")) . "&";
-        $search = APP_PATH_WEBROOT . "PDF/index.php?pid={$project_id}";
-
-        // ... depending on the type of page we are on.
-        if (strpos(PAGE_FULL, "/Design/online_designer.php") !== false) {
-            $search .= "&page=";
-            $pdfUrl .= "render_page=";
-?>
-        <script>
-            // PDF Action Tags External Module (Designer)
-            $(function() {
-                $('a[href*="PDF/index.php"]').each(function(index, el) {
-                    const a = $(el)
-                    a.attr('href', a.attr('href').replace('<?=$search?>', '<?=$pdfUrl?>'))
-                })
-            })
-        </script>
-<?php
-        }
-        else {
-?>
-        <script>
-            // PDF Action Tags External Module (Data Entry)
-            $(function() {
-                $('a[href*="PDF/index.php"]').each(function(index, el) {
-                    const a = $(el)
-                    a.attr('href', a.attr('href').replace('<?=$search?>', '<?=$pdfUrl?>'))
-                })
-                $('a[onclick*="PDF/index.php"]').each(function(index, el) {
-                    const a = $(el)
-                    a.attr('onclick', a.attr('onclick').replace("app_path_webroot+'PDF/index.php?pid='+pid+'&page", "'<?=$pdfUrl?>render_page"))
-                    a.attr('onclick', a.attr('onclick').replace("app_path_webroot+'PDF/index.php?pid='+pid+'&", "'<?=$pdfUrl?>"))
-                })
-            })
-        </script>
-<?php
-        }
         // Insert the action tag descriptions (only on Design)
         if (strpos(PAGE_FULL, "/Design/online_designer.php") !== false) {
             $template = file_get_contents(dirname(__FILE__)."/actiontags_info.html");
